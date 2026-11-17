@@ -1,4 +1,3 @@
-
 import csv
 import io
 import sqlite3
@@ -10,6 +9,7 @@ from database import create_table, save_enquiry
 from response_generator import generate_response
 from lead_scoring import calculate_lead_score
 from ai_processor import classify_enquiry
+from human_review import check_human_review
 
 
 app = FastAPI(
@@ -76,6 +76,7 @@ def analyse_enquiry(enquiry: Enquiry):
     try:
         result = classify_enquiry(enquiry.message)
         lead_score = calculate_lead_score(result)
+        review = check_human_review(enquiry.message, result, lead_score)
 
         response_draft = generate_response(
             enquiry.customer_name,
@@ -97,6 +98,7 @@ def analyse_enquiry(enquiry: Enquiry):
             "email": enquiry.email,
             "analysis": result,
             "lead_score": lead_score,
+            "human_review": review,
             "response_draft": response_draft
         }
 
