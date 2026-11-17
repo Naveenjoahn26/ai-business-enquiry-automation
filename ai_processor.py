@@ -125,7 +125,7 @@ def _is_job_or_internship(message):
 
 
 def _category_from_keywords(message):
-    """Backup rules used when the AI gives a category that is not in our list."""
+    """Rule-based category decision based only on the customer's message."""
     text = message.lower()
 
     if any(w in text for w in ["erp", "inventory", "dispatch", "stock", "operations"]):
@@ -143,55 +143,55 @@ def _category_from_keywords(message):
     return "General Enquiry"
 
 
-def _final_category(ai_category, message):
-    # Clear job / internship messages are decided by Python rules
+def _final_category(message):
+    """The small AI model is not reliable for categories, so rules decide."""
     if _is_job_or_internship(message):
         return "Job / Internship"
-
-    # Accept the AI category only if it is exactly one from our list
-    for category in CATEGORIES:
-        if ai_category.strip().lower() == category.lower():
-            return category
-
-    # Otherwise use backup keyword rules
     return _category_from_keywords(message)
+
+
+def _meaningful_words(text):
+    words = re.findall(r"[a-zA-Z]{4,}", text.lower())
+    return set(words)
+
+
+def _safe_requirement(ai_requirement, message):
+    """Use the AI requirement only if it really relates to the customer's message."""
+    ai_words = _meaningful_words(ai_requirement)
+    message_words = _meaningful_words(message)
+
+    overlap = ai_words & message_words
+    if len(overlap) >= 2:
+        return ai_requirement
+
+    # AI text does not match the message, so use the customer's own words
+    cleaned = " ".join(message.split())
+    if len(cleaned) > 200:
+        cleaned = cleaned[:200].rstrip() + "..."
+    return cleaned
 
 
 def classify_enquiry(message):
 
-    categories_text = "\n".join(f"- {c}" for c in CATEGORIES)
-
     prompt = f"""
-You are an expert business enquiry analyst.
+You are a business enquiry analyst.
 
-Read the customer's message carefully:
+Read the customer's message:
 {message}
 
-Extract information ONLY from the customer's message.
+Extract information ONLY from the customer's message above.
+
+Return JSON with exactly these five fields:
+- "category": the service area of the enquiry
+- "requirement": one short sentence using the customer's own words
+- "budget": the budget exactly as the customer wrote it, or "Not mentioned"
+- "timeline": the timeline exactly as the customer wrote it, or "Not mentioned"
+- "urgency": "Urgent" only if the customer asks for urgency, otherwise "Normal"
 
 Rules:
-1. "category" MUST be exactly one item from this list:
-{categories_text}
-2. Describe the customer's actual requirement in one sentence.
-3. Extract the exact budget ONLY if the customer wrote it. Otherwise write "Not mentioned".
-4. Extract the timeline ONLY if the customer wrote it. Otherwise write "Not mentioned".
-5. Set urgency to "Urgent" only if the customer indicates urgency.
-6. Never invent a budget or timeline. Never copy values from the example.
-
-Example:
-Input: We want a new website for our school.
-
-Expected JSON:
-{{
-  "category": "Website & App Development",
-  "requirement": "Build a new website for a school",
-  "budget": "Not mentioned",
-  "timeline": "Not mentioned",
-  "urgency": "Normal"
-}}
-
-Now analyse the customer's message and return only JSON with these five fields:
-category, requirement, budget, timeline, urgency.
+- Use only facts that are in the customer's message.
+- Never invent a budget, timeline, service or requirement.
+- If the customer did not say it, write "Not mentioned".
 """
 
     payload = {
@@ -199,7 +199,7 @@ category, requirement, budget, timeline, urgency.
         "messages": [
             {
                 "role": "system",
-                "content": "Extract business enquiry details accurately. Choose the category only from the given list. Never invent budget or timeline."
+                "content": "Extract business enquiry details accurately from the customer's message only. Never invent information."
             },
             {
                 "role": "user",
@@ -238,8 +238,11 @@ category, requirement, budget, timeline, urgency.
         for field in required_fields:
             result[field] = str(result[field]).strip()
 
-        # Category must be from our fixed list
-        result["category"] = _final_category(result["category"], message)
+        # Category is decided by rules (AI category is not trusted)
+        result["category"] = _final_category(message)
+
+        # Requirement must relate to the customer's message
+        result["requirement"] = _safe_requirement(result["requirement"], message)
 
         # Verify urgency using the original customer message
         message_lower = message.lower()
@@ -276,9 +279,6 @@ category, requirement, budget, timeline, urgency.
             found_timeline = _extract_timeline_from_message(message)
             if found_timeline:
                 result["timeline"] = found_timeline
-
-        if result["requirement"].lower() == "customer requirement":
-            raise ValueError("AI returned placeholder requirement")
 
         return result
 
