@@ -1,4 +1,3 @@
-
 # AI-Powered Business Enquiry Automation
 
 ## 1. Project Overview
@@ -59,8 +58,7 @@ API Response
 ai-business-enquiry-automation/
 │
 ├── data/
-│   ├── sample_enquiries.csv
-│   └── enquiries.db
+│   └── sample_enquiries.csv
 │
 ├── main.py
 ├── ai_processor.py
@@ -73,12 +71,18 @@ ai-business-enquiry-automation/
 └── .gitignore
 ```
 
+> Note: The SQLite database file (`data/enquiries.db`) is created automatically the first time the application runs. It is excluded from Git through `.gitignore`.
+
 ## 6. Installation and Setup
+
+### Required API keys / environment variables
+
+None. The AI model runs locally through Ollama, so no paid API key or `.env` file is needed.
 
 ### Step 1: Clone the repository
 
 ```bash
-git clone YOUR_GITHUB_REPOSITORY_URL
+git clone https://github.com/Naveenjoahn26/ai-business-enquiry-automation.git
 cd ai-business-enquiry-automation
 ```
 
@@ -180,24 +184,65 @@ The application includes:
 - Response drafts are generated but never automatically sent.
 - The current system uses SQLite and is intended as a prototype.
 - AI accuracy depends on the model and input quality.
+- The 1B model is small, so classification and extraction can be less accurate on vague or unusual enquiries.
 
-## 11. Future Improvements
+## 11. Technical Explanation
 
-- Build a web-based dashboard.
-- Add advanced lead scoring.
-- Improve AI extraction accuracy.
-- Add human review and approval workflows.
-- Support additional enquiry channels.
-- Introduce scalable database infrastructure.
+### Why did you choose this technology stack?
+
+- **Python** has the strongest ecosystem for AI and data work.
+- **FastAPI** gives fast API development, automatic Swagger documentation, and works with Pydantic for input validation.
+- **Ollama with Llama 3.2 (1B)** runs fully on a local machine. It is free, needs no API key, and keeps enquiry data on the local computer.
+- **SQLite** needs no installation or server, which suits a prototype.
+
+### How does your system decide the lead priority?
+
+The score is rule-based, not random. It starts at 30 points. Urgency adds 30, a mentioned budget adds 20, and a recognised business category adds 20. The total (maximum 100) maps to High (70–100), Medium (40–69) or Low (below 40). Because every score is a sum of fixed rules, it can be explained and adjusted.
+
+### How do you prevent the AI from generating incorrect business information?
+
+- [VERIFY against response_generator.py before submitting] The AI is used for classification and extraction. Response drafts are built only from the business information given in the assessment, with no invented services, prices or delivery dates.
+- Urgency is double-checked with Python keyword rules instead of relying only on the model.
+- Drafts are never sent automatically. A human must review them first.
+
+### What happens when the AI model fails or returns invalid output?
+
+- [VERIFY against ai_processor.py before submitting] AI service errors are caught so the API does not crash, and an error response is returned instead.
+- Input is validated before it reaches the model, and CSV rows that fail validation are reported.
+- [Add here what your code does with invalid or non-JSON model output, for example a default category or sending the enquiry to human review.]
+
+### How would you scale this system to process 10,000 enquiries per day?
+
+10,000 per day is roughly 7 per minute on average, with higher peaks. I would:
+
+- Put enquiries into a queue (for example Redis with Celery or RQ) and process them with several background workers.
+- Replace SQLite with PostgreSQL.
+- Run the model on a GPU server or use a hosted model API, since a 1B model on a laptop would be slow.
+- Add retries, rate limiting, caching for repeated enquiries, and monitoring with logs.
+
+### What would you improve if you had another two days?
+
+- Build a simple dashboard where the team can review, edit and approve response drafts.
+- Add a clear "needs human review" flag for unclear or sensitive enquiries (complaints, partnership requests).
+- Show the reasons behind each lead score in the API response.
+- Test with a stronger model and compare accuracy on the 12 sample enquiries.
+- Add automated tests and Docker setup.
 
 ## 12. AI Usage Disclosure
 
-This project uses the locally hosted Llama 3.2 1B model through Ollama for AI-powered business enquiry classification and information extraction.
+**AI inside the application:** The project uses the locally hosted Llama 3.2 1B model through Ollama for enquiry classification and information extraction. Python code handles validation, urgency verification, lead scoring, database operations and response draft generation. AI-generated results are subject to human review.
 
-Python is used for validation, urgency verification, lead scoring, database operations, and response draft generation.
+**AI tools used while developing:**
 
-AI-generated results are subject to human review.
+- [FILL IN: tool names, for example Claude, Antigravity, etc.]
+- Used for: [FILL IN: for example, step-by-step guidance, debugging errors, README writing, etc.]
+
+**What I implemented and decided myself:** [FILL IN honestly: for example, the project idea, the scoring rules, testing the enquiries, running and fixing the project.]
+
+I can explain and modify every important part of this project.
 
 ## 13. Author
 
-Developed as part of an internship assessment project.
+[FILL IN: Your full name]
+
+Developed as part of the Curd Rice Business Studio AI Intern technical assessment.
