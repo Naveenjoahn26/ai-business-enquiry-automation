@@ -7,6 +7,7 @@
 - Lead scoring (0-100) with reasons
 - Human review flag (complaints, pricing, partnership, sensitive topics, general enquiries, high priority leads)
 - Safe draft responses (fixed template, marked as draft, nothing sent automatically)
+- Frontend dashboard (Curd Rice styling, Modules A-D, Single & CSV intake, SQLite log)
 - README pushed to GitHub
 - Tested: enquiry 001, 002, 012
 

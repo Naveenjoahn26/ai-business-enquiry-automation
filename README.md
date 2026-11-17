@@ -59,6 +59,13 @@ ai-business-enquiry-automation/
 ├── data/
 │   └── sample_enquiries.csv
 │
+├── frontend/               # Interactive enquiry automation dashboard
+│   ├── index.html          # Web UI for enquiry processing
+│   ├── styles.css          # Curd Rice design system & styling
+│   ├── app.js              # Client logic & API connector
+│   ├── server.py           # Dev server with API reverse proxy
+│   └── README.md           # Frontend guide
+│
 ├── main.py                 # FastAPI app and endpoints
 ├── ai_processor.py         # AI extraction + verification rules
 ├── lead_scoring.py         # Score, priority and reasons
@@ -128,6 +135,16 @@ Open a second terminal, activate the virtual environment and run:
 ```bash
 python run_samples.py
 ```
+
+### Step 8 (optional): Launch the Frontend Dashboard
+
+To use the interactive Curd Rice Business Studio web dashboard:
+
+```bash
+python frontend/server.py
+```
+
+Then visit http://localhost:3000 in your browser, or open `frontend/index.html` directly.
 
 ## 7. API Endpoints
 

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Curd Rice Business Studio · AI Enquiry Automation</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header class="top-header">
+    <div class="brand-wrap">
+      <span class="curd-logo"></span>
+      <div class="brand-text">
+        <h1>CURD RICE BUSINESS STUDIO</h1>
+        <div class="subtext">AI-Powered Business Enquiry Automation System</div>
+      </div>
+    </div>
+
+    <div class="header-status">
+      <div class="status-badge" id="apiStatusBadge">
+        <span class="status-dot"></span>
+        <span id="apiStatusText">Checking FastAPI...</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Dashboard -->
+  <main class="dashboard-wrap">
+
+    <div class="dashboard-title-bar">
+      <div>
+        <h2>Enquiry Processing & Lead Intelligence</h2>
+        <p>AI classification, lead scoring, human-review safeguards, and automated response drafts.</p>
+      </div>
+    </div>
+
+    <div class="dashboard-grid">
+
+      <!-- LEFT COLUMN: INTAKE (Single Form or CSV Upload) -->
+      <section class="dash-card">
+        <div class="card-header-bar">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            Enquiry Intake
+          </h3>
+        </div>
+
+        <div class="card-body">
+          <!-- Intake Mode Tabs -->
+          <div class="input-tabs">
+            <button class="tab-btn active" id="tabSingle" type="button">Single Enquiry Form</button>
+            <button class="tab-btn" id="tabCsv" type="button">Batch CSV Upload</button>
+          </div>
+
+          <!-- SINGLE ENQUIRY VIEW -->
+          <div id="singleEnquiryView">
+            <!-- Quick Fill Sample Chips -->
+            <div class="samples-bar">
+              <div class="samples-label">Quick-Fill Assessment Samples:</div>
+              <div class="samples-list" id="samplesList">
+                <button class="sample-chip" data-sample="001" type="button">001: Jewellery WhatsApp</button>
+                <button class="sample-chip" data-sample="002" type="button">002: ₹2L Website</button>
+                <button class="sample-chip" data-sample="004" type="button">004: ERP Automation</button>
+                <button class="sample-chip" data-sample="005" type="button">005: Internship</button>
+                <button class="sample-chip" data-sample="008" type="button">008: 500 Leads/Day</button>
+                <button class="sample-chip" data-sample="012" type="button">012: Complaint Escalation</button>
+              </div>
+            </div>
+
+            <form id="enquiryForm">
+              <div class="form-group">
+                <label class="form-label" for="customerName">Customer / Contact Name *</label>
+                <input class="form-input" type="text" id="customerName" placeholder="e.g. Anand Murthy" required minlength="2">
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="customerEmail">Email Address *</label>
+                <input class="form-input" type="email" id="customerEmail" placeholder="e.g. anand@kovaimfg.com" required>
+              </div>
+
+              <div class="form-group">
+                <label class="form-label" for="enquiryMessage">Customer Enquiry / Requirement *</label>
+                <textarea class="form-textarea" id="enquiryMessage" placeholder="Describe the project, requirement, budget, or timeline..." required minlength="10"></textarea>
+              </div>
+
+              <button class="btn-mustard" id="btnSubmit" type="submit">
+                <span>⚡ Run AI Analysis & Save</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- BATCH CSV VIEW (Hidden by default) -->
+          <div id="csvUploadView" style="display: none;">
+            <p style="font-size: 0.8125rem; color: var(--text-muted); margin-bottom: 1rem;">
+              Upload a UTF-8 CSV containing <code>customer_name</code>, <code>email</code>, and <code>message</code> columns for batch AI processing.
+            </p>
+
+            <div class="csv-dropzone" id="csvDropzone">
+              <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#0B473E" stroke-width="2" style="margin: 0 auto 0.5rem; display: block;">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <div style="font-weight: 700; font-size: 0.9rem; margin-bottom: 0.2rem;">Select or Drag & Drop CSV File</div>
+              <div style="font-size: 0.75rem; color: var(--text-muted);" id="csvFileNameHint">Click to browse (e.g. data/sample_enquiries.csv)</div>
+              <input type="file" id="csvFileInput" accept=".csv" style="display: none;">
+            </div>
+
+            <button class="btn-mustard" id="btnProcessCsv" type="button" style="display: none;">
+              Upload & Process Batch CSV
+            </button>
+
+            <div id="csvStatusMessage" style="display: none; margin-top: 1rem; padding: 0.75rem; border-radius: 4px; font-size: 0.8125rem;"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- RIGHT COLUMN: AI INTELLIGENCE OUTPUT (Modules A, B, C, D) -->
+      <section class="dash-card">
+        <div class="card-header-bar">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"></path>
+            </svg>
+            AI Processing & Intelligence Report
+          </h3>
+          <span class="storage-tag" id="storageStatusTag" style="display: none;">
+            ✓ Stored in SQLite
+          </span>
+        </div>
+
+        <div class="card-body">
+          <!-- Empty State -->
+          <div class="output-empty-state" id="emptyOutput">
+            <svg class="output-empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <div style="font-weight: 700; margin-bottom: 0.35rem; color: var(--charcoal);">No Enquiry Processed Yet</div>
+            <div style="font-size: 0.8125rem;">Submit an enquiry on the left or click a sample to see AI classification, lead scoring, and response generation.</div>
+          </div>
+
+          <!-- Loading State -->
+          <div class="loading-box" id="loadingBox" style="display: none;">
+            <div class="spinner"></div>
+            <div style="font-weight: 700; color: var(--pine-green);">Analyzing enquiry with AI model...</div>
+            <div style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.2rem;">Classifying, extracting parameters, calculating lead score</div>
+          </div>
+
+          <!-- Result Container -->
+          <div class="result-box" id="resultContainer" style="display: none;">
+            
+            <!-- MODULE A: CLASSIFICATION -->
+            <div class="module-section">
+              <div class="module-header">
+                <span>Module A · Enquiry Classification</span>
+                <span class="badge-category" id="resCategory">Category</span>
+              </div>
+              <div class="meta-grid">
+                <div class="meta-item">
+                  <div class="meta-item-label">Budget</div>
+                  <div class="meta-item-value" id="resBudget">Not stated</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-item-label">Timeline</div>
+                  <div class="meta-item-value" id="resTimeline">Not stated</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-item-label">Urgency</div>
+                  <div class="meta-item-value" id="resUrgency" style="text-transform: capitalize;">Normal</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-item-label">Customer</div>
+                  <div class="meta-item-value" id="resCustomer">--</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE B: LEAD SCORING -->
+            <div class="module-section">
+              <div class="module-header">
+                <span>Module B · Intelligent Lead Scoring (0–100)</span>
+                <span class="priority-pill" id="resPriorityPill">Priority</span>
+              </div>
+              <div class="score-row">
+                <div class="score-number-box">
+                  <div class="score-val" id="resScoreVal">0</div>
+                  <div class="score-max">/ 100</div>
+                </div>
+                <div>
+                  <div style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.25rem;">Scoring Logic:</div>
+                  <ul class="reasons-list" id="resReasonsList"></ul>
+                </div>
+              </div>
+            </div>
+
+            <!-- MODULE C: HUMAN REVIEW SAFEGUARD & RESPONSE GENERATION -->
+            <div class="module-section">
+              <div class="module-header">
+                <span>Module C · Human Review & Response Generation</span>
+              </div>
+              
+              <!-- Review Flag Banner -->
+              <div class="review-banner" id="resReviewBanner">
+                <div style="font-size: 1.1rem;" id="resReviewIcon">⚠️</div>
+                <div>
+                  <div class="review-title" id="resReviewHeading">Human Review Required</div>
+                  <div style="font-size: 0.75rem; margin-top: 0.2rem;" id="resReviewReasons">Reasons...</div>
+                </div>
+              </div>
+
+              <!-- Draft Response Card -->
+              <div class="draft-card" style="margin-top: 0.75rem;">
+                <div class="draft-header">
+                  <span class="draft-disclaimer">Draft Reply · Requires Human Approval</span>
+                  <button class="btn-copy" id="btnCopyDraft" type="button">Copy Draft</button>
+                </div>
+                <div class="draft-body" id="resDraftContent"></div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- MODULE D: STORED DATABASE ENQUIRIES LOG -->
+    <section class="database-section">
+      <div class="dash-card">
+        <div class="card-header-bar">
+          <h3>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+            Module D · SQLite Database Storage (<span id="recordCount">0</span> records)
+          </h3>
+          <button class="btn-copy" id="btnRefreshDb" type="button">↻ Refresh Records</button>
+        </div>
+
+        <div class="table-responsive">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Customer Name</th>
+                <th>Email</th>
+                <th>Category</th>
+                <th>Score</th>
+                <th>Message Content</th>
+              </tr>
+            </thead>
+            <tbody id="dbTableBody">
+              <tr>
+                <td colspan="6" style="text-align: center; color: var(--text-muted); padding: 1.5rem;">Loading stored records from SQLite...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
