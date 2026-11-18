@@ -1,6 +1,10 @@
+
 import json
 import re
 import urllib.request
+import urllib.error
+import os
+
 
 CATEGORIES = [
     "Business Consulting",
@@ -17,18 +21,15 @@ NUMBER_PATTERN = r"(?P<num>\d[\d,]*(?:\.\d+)?)"
 
 # Budget patterns, checked in this order
 BUDGET_PATTERNS = [
-    # Rs 50000, INR 2 lakh, ₹2 lakh
     re.compile(
         r"(?<![a-z])(?P<cur>₹|rs\.?|inr)\s*" + NUMBER_PATTERN + r"\s*" + UNIT_PATTERN,
         re.IGNORECASE,
     ),
-    # budget is 50000, budget of 2 lakh
     re.compile(
         r"budget\s*(?:is|of|:|around|about)?\s*(?P<cur>₹|rs\.?|inr)?\s*"
         + NUMBER_PATTERN + r"\s*" + UNIT_PATTERN,
         re.IGNORECASE,
     ),
-    # 2 lakh, 3 crore
     re.compile(
         NUMBER_PATTERN + r"\s*(?P<unit>lakhs?|lacs?|crores?)",
         re.IGNORECASE,
@@ -53,6 +54,7 @@ def _extract_budget_from_message(message):
 
         groups = match.groupdict()
         number = groups.get("num")
+
         if not number:
             continue
 
@@ -60,10 +62,13 @@ def _extract_budget_from_message(message):
         currency = groups.get("cur")
 
         text = number
+
         if unit:
             text = f"{number} {unit}"
+
         if currency:
             text = f"₹{text}"
+
         return text
 
     return None
@@ -72,14 +77,17 @@ def _extract_budget_from_message(message):
 def _extract_timeline_from_message(message):
     """Backup: find a timeline written in the customer's message using rules."""
     match = TIMELINE_PATTERN.search(message)
+
     if match:
         return match.group(0).strip()
+
     return None
 
 
 def _budget_is_in_message(budget, message):
     """Return True only if the budget number really appears in the customer's message."""
     budget_digits = re.sub(r"\D", "", str(budget))
+
     if not budget_digits:
         return False
 
@@ -87,18 +95,23 @@ def _budget_is_in_message(budget, message):
     found_numbers = re.findall(r"\d[\d,\.]*", message_lower)
 
     allowed = set()
+
     for number_text in found_numbers:
         cleaned = number_text.replace(",", "")
+
         try:
             value = float(cleaned)
         except ValueError:
             continue
 
         allowed.add(str(int(value)))
+
         if "lakh" in message_lower or "lac" in message_lower:
             allowed.add(str(int(value * 100000)))
+
         if "crore" in message_lower:
             allowed.add(str(int(value * 10000000)))
+
         if re.search(r"\d\s*k\b", message_lower):
             allowed.add(str(int(value * 1000)))
 
@@ -111,7 +124,9 @@ def _timeline_is_in_message(message):
         "day", "week", "month", "year", "today", "tomorrow",
         "tonight", "immediately", "quarter", "hour"
     ]
+
     message_lower = message.lower()
+
     return any(word in message_lower for word in time_words)
 
 
@@ -120,7 +135,9 @@ def _is_job_or_internship(message):
         "internship", "intern ", "job", "hiring", "vacancy",
         "career", "college project", "student", "placement"
     ]
+
     message_lower = message.lower()
+
     return any(word in message_lower for word in keywords)
 
 
@@ -128,25 +145,39 @@ def _category_from_keywords(message):
     """Rule-based category decision based only on the customer's message."""
     text = message.lower()
 
-    if any(w in text for w in ["erp", "inventory", "dispatch", "stock", "operations"]):
+    if any(w in text for w in [
+        "erp", "inventory", "dispatch", "stock", "operations"
+    ]):
         return "Operational Systems / ERP"
-    if any(w in text for w in ["website", "web site", "mobile app", "app development", "application"]):
+
+    if any(w in text for w in [
+        "website", "web site", "mobile app", "app development", "application"
+    ]):
         return "Website & App Development"
+
     if re.search(r"\bai\b", text) or any(
         w in text for w in ["automat", "chatbot", "whatsapp", "assistant"]
     ):
         return "AI Automation"
-    if any(w in text for w in ["marketing", "branding", "brand", "seo", "social media"]):
+
+    if any(w in text for w in [
+        "marketing", "branding", "brand", "seo", "social media"
+    ]):
         return "Branding & Marketing"
-    if any(w in text for w in ["consult", "strategy", "business intelligence", "dashboard", "reporting"]):
+
+    if any(w in text for w in [
+        "consult", "strategy", "business intelligence", "dashboard", "reporting"
+    ]):
         return "Business Consulting"
+
     return "General Enquiry"
 
 
 def _final_category(message):
-    """The small AI model is not reliable for categories, so rules decide."""
+    """The AI model is not trusted for categories, so rules decide."""
     if _is_job_or_internship(message):
         return "Job / Internship"
+
     return _category_from_keywords(message)
 
 
@@ -161,13 +192,15 @@ def _safe_requirement(ai_requirement, message):
     message_words = _meaningful_words(message)
 
     overlap = ai_words & message_words
+
     if len(overlap) >= 2:
         return ai_requirement
 
-    # AI text does not match the message, so use the customer's own words
     cleaned = " ".join(message.split())
+
     if len(cleaned) > 200:
         cleaned = cleaned[:200].rstrip() + "..."
+
     return cleaned
 
 
@@ -194,55 +227,97 @@ Rules:
 - If the customer did not say it, write "Not mentioned".
 """
 
+    api_key = os.environ.get("GEMINI_API_KEY")
+
+    if not api_key:
+        raise RuntimeError(
+            "GEMINI_API_KEY environment variable is missing"
+        )
+
+    model = os.environ.get(
+        "GEMINI_MODEL",
+        "gemini-3.8-flash"
+    )
+
     payload = {
-        "model": "llama3.2:1b",
-        "messages": [
+        "contents": [
             {
-                "role": "system",
-                "content": "Extract business enquiry details accurately from the customer's message only. Never invent information."
-            },
-            {
-                "role": "user",
-                "content": prompt
+                "parts": [
+                    {
+                        "text": prompt
+                    }
+                ]
             }
         ],
-        "format": "json",
-        "stream": False,
-        "options": {
-            "temperature": 0
+        "generationConfig": {
+            "temperature": 0,
+            "responseMimeType": "application/json"
         }
     }
 
     try:
         request = urllib.request.Request(
-            "http://localhost:11434/api/chat",
+            f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent",
             data=json.dumps(payload).encode("utf-8"),
-            headers={"Content-Type": "application/json"},
+            headers={
+                "Content-Type": "application/json",
+                "x-goog-api-key": api_key
+            },
             method="POST"
         )
 
-        with urllib.request.urlopen(request, timeout=180) as response:
-            data = json.loads(response.read().decode("utf-8"))
+        with urllib.request.urlopen(request, timeout=60) as response:
+            data = json.loads(
+                response.read().decode("utf-8")
+            )
 
-        result = json.loads(data["message"]["content"])
+        candidates = data.get("candidates", [])
+
+        if not candidates:
+            raise ValueError(
+                "Gemini returned no response candidates"
+            )
+
+        parts = candidates[0].get(
+            "content", {}
+        ).get("parts", [])
+
+        response_text = "".join(
+            part.get("text", "") for part in parts
+        ).strip()
+
+        if not response_text:
+            raise ValueError(
+                "Gemini returned an empty response"
+            )
+
+        result = json.loads(response_text)
 
         required_fields = [
-            "category", "requirement", "budget",
-            "timeline", "urgency"
+            "category",
+            "requirement",
+            "budget",
+            "timeline",
+            "urgency"
         ]
 
         if not all(field in result for field in required_fields):
-            raise ValueError("AI response is missing required fields")
+            raise ValueError(
+                "AI response is missing required fields"
+            )
 
         # Make sure every value is plain text
         for field in required_fields:
             result[field] = str(result[field]).strip()
 
-        # Category is decided by rules (AI category is not trusted)
+        # Category is decided by rules
         result["category"] = _final_category(message)
 
         # Requirement must relate to the customer's message
-        result["requirement"] = _safe_requirement(result["requirement"], message)
+        result["requirement"] = _safe_requirement(
+            result["requirement"],
+            message
+        )
 
         # Verify urgency using the original customer message
         message_lower = message.lower()
@@ -268,6 +343,7 @@ Rules:
 
         if result["budget"].lower() == "not mentioned":
             found_budget = _extract_budget_from_message(message)
+
             if found_budget:
                 result["budget"] = found_budget
 
@@ -277,12 +353,23 @@ Rules:
 
         if result["timeline"].lower() == "not mentioned":
             found_timeline = _extract_timeline_from_message(message)
+
             if found_timeline:
                 result["timeline"] = found_timeline
 
         return result
 
+    except urllib.error.HTTPError as error:
+        error_details = error.read().decode(
+            "utf-8",
+            errors="replace"
+        )
+
+        raise RuntimeError(
+            f"Gemini API error ({error.code}): {error_details}"
+        ) from error
+
     except Exception as error:
         raise RuntimeError(
-            f"Local AI analysis failed: {error}"
+            f"Gemini AI analysis failed: {error}"
         ) from error
