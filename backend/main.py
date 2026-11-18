@@ -5,7 +5,7 @@ import sqlite3
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from pydantic import BaseModel, Field, ValidationError
 
-from database import create_table, save_enquiry
+from database import create_table, save_enquiry, DATABASE_NAME
 from response_generator import generate_response
 from lead_scoring import calculate_lead_score
 from ai_processor import classify_enquiry
@@ -114,7 +114,7 @@ def get_enquiries():
     connection = None
 
     try:
-        connection = sqlite3.connect("data/enquiries.db")
+        connection = sqlite3.connect(DATABASE_NAME)
         cursor = connection.cursor()
 
         cursor.execute("SELECT * FROM enquiries")

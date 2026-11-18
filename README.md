@@ -56,8 +56,17 @@ API Response
 ```text
 ai-business-enquiry-automation/
 │
-├── data/
-│   └── sample_enquiries.csv
+├── backend/                # FastAPI backend & AI pipelines
+│   ├── data/               # Sample CSV datasets and database
+│   │   └── sample_enquiries.csv
+│   ├── main.py             # FastAPI app and endpoints
+│   ├── ai_processor.py     # AI extraction + verification rules
+│   ├── lead_scoring.py     # Score, priority and reasons
+│   ├── human_review.py     # Human review flag
+│   ├── response_generator.py # Draft reply template
+│   ├── database.py         # SQLite storage
+│   ├── run_samples.py      # Runs the 12 sample enquiries
+│   └── requirements.txt    # Backend dependencies
 │
 ├── frontend/               # Interactive enquiry automation dashboard
 │   ├── index.html          # Web UI for enquiry processing
@@ -66,17 +75,10 @@ ai-business-enquiry-automation/
 │   ├── server.py           # Dev server with API reverse proxy
 │   └── README.md           # Frontend guide
 │
-├── main.py                 # FastAPI app and endpoints
-├── ai_processor.py         # AI extraction + verification rules
-├── lead_scoring.py         # Score, priority and reasons
-├── human_review.py         # Human review flag
-├── response_generator.py   # Draft reply template
-├── database.py             # SQLite storage
-├── run_samples.py          # Runs the 12 sample enquiries
-│
 ├── requirements.txt
 ├── PROJECT_PROGRESS.md
 ├── README.md
+├── .env.example
 └── .gitignore
 ```
 
@@ -121,7 +123,14 @@ Keep Ollama running.
 ### Step 5: Start the application
 
 ```bash
+cd backend
 uvicorn main:app --reload
+```
+
+Or from the root directory:
+
+```bash
+uvicorn backend.main:app --reload
 ```
 
 ### Step 6: Open the API documentation
@@ -133,7 +142,7 @@ http://127.0.0.1:8000/docs
 Open a second terminal, activate the virtual environment and run:
 
 ```bash
-python run_samples.py
+python backend/run_samples.py
 ```
 
 ### Step 8 (optional): Launch the Frontend Dashboard
