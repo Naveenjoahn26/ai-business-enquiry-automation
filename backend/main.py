@@ -1,8 +1,10 @@
+
 import csv
 import io
 import sqlite3
 
 from fastapi import FastAPI, UploadFile, File, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, ValidationError
 
 from database import create_table, save_enquiry, DATABASE_NAME
@@ -16,6 +18,15 @@ app = FastAPI(
     title="AI Business Enquiry Automation",
     description="AI-powered business enquiry processing system",
     version="1.0.0"
+)
+
+# CORS Configuration for deployed frontend
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -64,7 +75,7 @@ def create_new_enquiry(enquiry: Enquiry):
             "status": "received"
         }
 
-    except Exception as error:
+    except Exception:
         raise HTTPException(
             status_code=500,
             detail="Database error while saving enquiry."
@@ -76,7 +87,11 @@ def analyse_enquiry(enquiry: Enquiry):
     try:
         result = classify_enquiry(enquiry.message)
         lead_score = calculate_lead_score(result)
-        review = check_human_review(enquiry.message, result, lead_score)
+        review = check_human_review(
+            enquiry.message,
+            result,
+            lead_score
+        )
 
         response_draft = generate_response(
             enquiry.customer_name,
@@ -102,7 +117,7 @@ def analyse_enquiry(enquiry: Enquiry):
             "response_draft": response_draft
         }
 
-    except Exception as error:
+    except Exception:
         raise HTTPException(
             status_code=503,
             detail="AI analysis or database service failed. Please try again."
