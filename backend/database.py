@@ -3,6 +3,7 @@ import sqlite3
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATABASE_NAME = os.path.join(BASE_DIR, "data", "enquiries.db")
+os.makedirs(os.path.dirname(DATABASE_NAME), exist_ok=True)
 
 
 def create_table():
