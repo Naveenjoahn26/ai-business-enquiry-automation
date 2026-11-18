@@ -3,7 +3,7 @@
  * Clean, lightweight client for Modules A, B, C, & D.
  */
 
-const API_BASE = window.location.port === "3000" ? "" : "http://127.0.0.1:8000";
+const API_BASE = "https://ai-business-enquiry-automation.onrender.com";
 
 // Pre-configured assessment sample enquiries from the assignment brief
 const SAMPLES = {
