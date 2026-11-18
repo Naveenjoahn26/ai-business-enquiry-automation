@@ -20,7 +20,7 @@ app = FastAPI(
     version="1.0.0"
 )
 
-# CORS Configuration for deployed frontend
+# CORS Configuration
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -75,7 +75,8 @@ def create_new_enquiry(enquiry: Enquiry):
             "status": "received"
         }
 
-    except Exception:
+    except Exception as error:
+        print("ENQUIRY SAVE ERROR:", repr(error))
         raise HTTPException(
             status_code=500,
             detail="Database error while saving enquiry."
@@ -117,7 +118,8 @@ def analyse_enquiry(enquiry: Enquiry):
             "response_draft": response_draft
         }
 
-    except Exception:
+    except Exception as error:
+        print("AI ANALYSIS ERROR:", repr(error))
         raise HTTPException(
             status_code=503,
             detail="AI analysis or database service failed. Please try again."
@@ -137,7 +139,8 @@ def get_enquiries():
 
         return {"enquiries": records}
 
-    except sqlite3.Error:
+    except sqlite3.Error as error:
+        print("DATABASE READ ERROR:", repr(error))
         raise HTTPException(
             status_code=500,
             detail="Unable to retrieve enquiries from database."
@@ -236,25 +239,33 @@ async def upload_csv(file: UploadFile = File(...)):
 
         processed = 0
 
-        for row in rows:
-            result = classify_enquiry(row["message"])
-            lead_score = calculate_lead_score(result)
+        for row_number, row in enumerate(rows, start=2):
+            try:
+                result = classify_enquiry(row["message"])
+                lead_score = calculate_lead_score(result)
 
-            response_draft = generate_response(
-                row["customer_name"],
-                result
-            )
+                response_draft = generate_response(
+                    row["customer_name"],
+                    result
+                )
 
-            save_enquiry(
-                row["customer_name"],
-                row["email"],
-                row["message"],
-                result["category"],
-                lead_score["score"],
-                response_draft
-            )
+                save_enquiry(
+                    row["customer_name"],
+                    row["email"],
+                    row["message"],
+                    result["category"],
+                    lead_score["score"],
+                    response_draft
+                )
 
-            processed += 1
+                processed += 1
+
+            except Exception as error:
+                print(
+                    f"CSV ROW {row_number} PROCESSING ERROR:",
+                    repr(error)
+                )
+                raise
 
         return {
             "message": "CSV processed successfully",
@@ -264,7 +275,8 @@ async def upload_csv(file: UploadFile = File(...)):
     except HTTPException:
         raise
 
-    except Exception:
+    except Exception as error:
+        print("CSV PROCESSING ERROR:", repr(error))
         raise HTTPException(
             status_code=503,
             detail="CSV processing or AI service failed. Please try again."
